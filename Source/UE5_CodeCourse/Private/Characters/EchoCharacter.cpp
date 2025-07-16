@@ -11,6 +11,9 @@
 #include "Items/Item.h"
 #include "Items/Weapons/Weapon.h"
 #include "Components/StaticMeshComponent.h"
+#include "HUD/EchoHUD.h"
+#include "HUD/EchoOverlay.h"
+#include "Components/AttributeComponent.h"
 
 AEchoCharacter::AEchoCharacter()
 {
@@ -59,25 +62,39 @@ void AEchoCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputCompo
 	}
 }
 
-void AEchoCharacter::GetHit_Implementation(const FVector& ImpactPoint)
+void AEchoCharacter::Jump()
 {
-	PlayHitSound(ImpactPoint);
-	SpawnHitParticles(ImpactPoint);
+	if (IsUnoccupied())
+	{
+		Super::Jump();
+	}
+}
+
+float AEchoCharacter::TakeDamage(float DamageAmount, FDamageEvent const& DamageEvent, AController* EventInstigator, AActor* DamageCauser)
+{
+	HandleDamage(DamageAmount);
+	SetHUDHealth();
+	return DamageAmount;
+}
+
+void AEchoCharacter::GetHit_Implementation(const FVector& ImpactPoint, AActor* Hitter)
+{
+	Super::GetHit_Implementation(ImpactPoint, Hitter);
+	SetWeaponCollisionEnabled(ECollisionEnabled::NoCollision);
+
+	if (Attributes && Attributes->GetHealthPercent() > 0.f)
+	{
+		ActionState = EActionState::EAS_HitReaction;
+	}
 }
 
 void AEchoCharacter::BeginPlay()
 {
 	Super::BeginPlay();
-
 	APlayerController* PlayerController = Cast<APlayerController>(GetController());
-	if (PlayerController)
-	{
-		UEnhancedInputLocalPlayerSubsystem* Subsystem = ULocalPlayer::GetSubsystem<UEnhancedInputLocalPlayerSubsystem>(PlayerController->GetLocalPlayer());
-		if (Subsystem)
-		{
-			Subsystem->AddMappingContext(EchoContext, 0);
-		}
-	}
+
+	InitializeEchoInput(PlayerController);
+	InitializeEchoOverlay(PlayerController);
 
 	Tags.Add(FName("EngageableCharacter"));
 }
@@ -209,9 +226,65 @@ void AEchoCharacter::PlayEquipMontage(FName SectionName)
 	}
 }
 
+void AEchoCharacter::Die()
+{
+	Super::Die();
+	ActionState = EActionState::EAS_Dead;
+	DisableMeshCollision();
+}
+
 void AEchoCharacter::FinishEquipping()
 {
 	ActionState = EActionState::EAS_Unoccupied;
+}
+
+void AEchoCharacter::HitReactEnd()
+{
+	ActionState = EActionState::EAS_Unoccupied;
+}
+
+bool AEchoCharacter::IsUnoccupied()
+{
+	return ActionState == EActionState::EAS_Unoccupied;
+}
+
+void AEchoCharacter::InitializeEchoInput(APlayerController* PlayerController)
+{
+	if (PlayerController)
+	{
+		UEnhancedInputLocalPlayerSubsystem* Subsystem = ULocalPlayer::GetSubsystem<UEnhancedInputLocalPlayerSubsystem>(PlayerController->GetLocalPlayer());
+		if (Subsystem)
+		{
+			Subsystem->AddMappingContext(EchoContext, 0);
+		}
+	}
+}
+
+void AEchoCharacter::InitializeEchoOverlay(APlayerController* PlayerController)
+{
+	if (PlayerController)
+	{
+		AEchoHUD* EchoHUD = Cast<AEchoHUD>(PlayerController->GetHUD());
+		if (EchoHUD)
+		{
+			EchoOverlay = EchoHUD->GetEchoOverlay();
+			if (EchoOverlay && Attributes)
+			{
+				EchoOverlay->SetHealthBarPercent(Attributes->GetHealthPercent());
+				EchoOverlay->SetStaminaBarPercent(1.f);
+				EchoOverlay->SetGold(0);
+				EchoOverlay->SetSouls(0);
+			}
+		}
+	}
+}
+
+void AEchoCharacter::SetHUDHealth()
+{
+	if (EchoOverlay && Attributes)
+	{
+		EchoOverlay->SetHealthBarPercent(Attributes->GetHealthPercent());
+	}
 }
 
 

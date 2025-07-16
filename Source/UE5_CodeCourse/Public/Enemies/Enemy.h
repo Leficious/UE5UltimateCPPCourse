@@ -29,7 +29,7 @@ public:
 	/** </AActor> */
 
 	/** <IHitInterface> */
-	virtual void GetHit_Implementation(const FVector& ImpactPoint) override;
+	virtual void GetHit_Implementation(const FVector& ImpactPoint, AActor* Hitter) override;
 	/** </IHitInterface> */
 
 protected:
@@ -44,11 +44,7 @@ protected:
 	virtual bool CanAttack() override;
 	virtual void AttackEnd() override;
 	virtual void HandleDamage(float DamageAmount) override;
-	virtual int32 PlayDeathMontage() override;
 	/** </ABaseCharacter> */
-
-	UPROPERTY(BlueprintReadOnly)
-	TEnumAsByte<EDeathPose> DeathPose;
 
 	UPROPERTY(BlueprintReadOnly)
 	EEnemyState EnemyState = EEnemyState::EES_Patrolling;
@@ -91,9 +87,6 @@ private:
 
 	UPROPERTY(EditAnywhere)
 	TSubclassOf<AWeapon> WeaponClass;
-
-	UPROPERTY()
-	TObjectPtr<AActor> CombatTarget;
 
 	UPROPERTY(EditAnywhere)
 	double CombatRadius = 800.f;
@@ -139,7 +132,7 @@ private:
 	float AttackMax = 1.f;
 
 	UPROPERTY(EditDefaultsOnly)
-	float RunningSpeed = 300.f;
+	float RunningSpeed = 450.f;
 
 	UPROPERTY(EditAnywhere, Category = "Combat")
 	float DeathLifeSpan = 5.f;
