@@ -8,6 +8,7 @@
 
 class USphereComponent;
 class UNiagaraComponent;
+class UNiagaraSystem;
 
 enum class EItemState : uint8
 {
@@ -29,12 +30,16 @@ public:
 protected:
 	// Called when the game starts or when spawned
 	virtual void BeginPlay() override;
+	void SetEnableCollision();
 
 	UFUNCTION()
 	virtual void OnSphereBeginOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult);
 	
 	UFUNCTION()
 	virtual void OnSphereEndOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex);
+
+	virtual void SpawnPickupSystem();
+	virtual void SpawnPickupSound();
 
 	UPROPERTY(BlueprintReadOnly)
 	FVector StartLocation;
@@ -57,7 +62,13 @@ protected:
 	TObjectPtr<USphereComponent> CollisionSphere;
 
 	UPROPERTY(EditAnywhere)
-	TObjectPtr<UNiagaraComponent> EmbersEffect;
+	TObjectPtr<UNiagaraComponent> ItemEffect;
+
+	UPROPERTY(EditAnywhere)
+	TObjectPtr<UNiagaraSystem> PickupEffect;
+
+	UPROPERTY(EditAnywhere)
+	TObjectPtr<USoundBase> PickupSound;
 
 private:
 

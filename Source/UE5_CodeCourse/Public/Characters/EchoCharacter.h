@@ -6,6 +6,7 @@
 #include "BaseCharacter.h"
 #include "InputActionValue.h"
 #include "CharacterTypes.h"
+#include "Interfaces/PickupInterface.h"
 #include "EchoCharacter.generated.h"
 
 class UInputMappingContext;
@@ -16,18 +17,24 @@ class UGroomComponent;
 class AItem;
 class UAnimMontage;
 class UEchoOverlay;
+class ASoul;
+class ATreasure;
 
 UCLASS()
-class UE5_CODECOURSE_API AEchoCharacter : public ABaseCharacter
+class UE5_CODECOURSE_API AEchoCharacter : public ABaseCharacter, public IPickupInterface
 {
 	GENERATED_BODY()
 
 public:
 	AEchoCharacter();
+	virtual void Tick(float DeltaTime) override;
 	virtual void SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent) override;
 	virtual void Jump() override;
 	virtual float TakeDamage(float DamageAmount, struct FDamageEvent const& DamageEvent, class AController* EventInstigator, AActor* DamageCauser) override;
 	virtual void GetHit_Implementation(const FVector& ImpactPoint, AActor* Hitter) override;
+	virtual void SetOverlappingItem(AItem* Item) override;
+	virtual void AddSouls(ASoul* Soul) override;
+	virtual void AddGold(ATreasure* Treasure) override;
 
 	UPROPERTY(EditAnywhere, Category = Input)
 	UInputMappingContext* EchoContext;
@@ -47,6 +54,9 @@ public:
 	UPROPERTY(EditAnywhere, Category = Input)
 	UInputAction* AttackAction;
 
+	UPROPERTY(EditAnywhere, Category = Input)
+	UInputAction* DodgeAction;
+
 protected:
 
 	virtual void BeginPlay() override;
@@ -62,6 +72,7 @@ protected:
 	void Look(const FInputActionValue& Value);
 	void Equip();
 	virtual void Attack() override;
+	void Dodge();
 
 	UFUNCTION(BlueprintCallable)
 	void AttachWeaponToBack();
@@ -78,6 +89,7 @@ protected:
 	/** Combat */
 	void EquipWeapon(AWeapon* Weapon);
 	virtual void AttackEnd() override;
+	virtual void DodgeEnd() override;
 	virtual bool CanAttack() override;
 	bool CanDisarm();
 	bool CanArm();
@@ -85,6 +97,8 @@ protected:
 	void Arm();
 	void PlayEquipMontage(FName SectionName);
 	virtual void Die() override;
+	bool HasEnoughStamina();
+	bool IsOccupied();
 
 private:
 	bool IsUnoccupied();
@@ -119,7 +133,7 @@ private:
 	TObjectPtr<UEchoOverlay> EchoOverlay;
 
 public:
-	FORCEINLINE void SetOverlappingItem(AItem* Item) { OverlappingItem = Item; }
+
 	FORCEINLINE ECharacterState GetCharacterState() const { return CharacterState; }
 	FORCEINLINE EActionState GetActionState() const { return ActionState; }
 };

@@ -14,10 +14,12 @@
 #include "HUD/EchoHUD.h"
 #include "HUD/EchoOverlay.h"
 #include "Components/AttributeComponent.h"
+#include "Items/Soul.h"
+#include "Items/Treasure.h"
 
 AEchoCharacter::AEchoCharacter()
 {
-	PrimaryActorTick.bCanEverTick = false;
+	PrimaryActorTick.bCanEverTick = true;
 
 	bUseControllerRotationPitch = false;
 	bUseControllerRotationYaw = false;
@@ -48,6 +50,15 @@ AEchoCharacter::AEchoCharacter()
 	Eyebrows->AttachmentName = FString("head");
 }
 
+void AEchoCharacter::Tick(float DeltaTime)
+{
+	if (Attributes && EchoOverlay)
+	{
+		Attributes->RegenStamina(DeltaTime);
+		EchoOverlay->SetStaminaBarPercent(Attributes->GetStaminaPercent());
+	}
+}
+
 void AEchoCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
 {
 	Super::SetupPlayerInputComponent(PlayerInputComponent);
@@ -59,6 +70,7 @@ void AEchoCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputCompo
 		EnhancedInputComponent->BindAction(JumpAction, ETriggerEvent::Triggered, this, &AEchoCharacter::Jump);
 		EnhancedInputComponent->BindAction(EquipAction, ETriggerEvent::Triggered, this, &AEchoCharacter::Equip);
 		EnhancedInputComponent->BindAction(AttackAction, ETriggerEvent::Triggered, this, &AEchoCharacter::Attack);
+		EnhancedInputComponent->BindAction(DodgeAction, ETriggerEvent::Triggered, this, &AEchoCharacter::Dodge);
 	}
 }
 
@@ -85,6 +97,29 @@ void AEchoCharacter::GetHit_Implementation(const FVector& ImpactPoint, AActor* H
 	if (Attributes && Attributes->GetHealthPercent() > 0.f)
 	{
 		ActionState = EActionState::EAS_HitReaction;
+	}
+}
+
+void AEchoCharacter::SetOverlappingItem(AItem* Item)
+{
+	OverlappingItem = Item;
+}
+
+void AEchoCharacter::AddSouls(ASoul* Soul)
+{
+	if (Attributes && EchoOverlay)
+	{
+		Attributes->AddSouls(Soul->GetSouls());
+		EchoOverlay->SetSouls(Attributes->GetSouls());
+	}
+}
+
+void AEchoCharacter::AddGold(ATreasure* Treasure)
+{
+	if (Attributes && EchoOverlay)
+	{
+		Attributes->AddGold(Treasure->GetGold());
+		EchoOverlay->SetGold(Attributes->GetGold());
 	}
 }
 
@@ -154,6 +189,18 @@ void AEchoCharacter::Attack()
 	}	
 }
 
+void AEchoCharacter::Dodge()
+{
+	if (IsOccupied() || !HasEnoughStamina()) return;
+	if (Attributes)
+	{
+		Attributes->UseStamina(Attributes->GetDodgeCost());
+	}
+
+	PlayDodgeMontage();
+	ActionState = EActionState::EAS_Dodge;
+}
+
 void AEchoCharacter::EquipWeapon(AWeapon* Weapon)
 {
 	Weapon->Equip(GetMesh(), FName("RightHandSocket"), this, this);
@@ -164,6 +211,12 @@ void AEchoCharacter::EquipWeapon(AWeapon* Weapon)
 
 void AEchoCharacter::AttackEnd()
 {
+	ActionState = EActionState::EAS_Unoccupied;
+}
+
+void AEchoCharacter::DodgeEnd()
+{
+	Super::DodgeEnd();
 	ActionState = EActionState::EAS_Unoccupied;
 }
 
@@ -231,6 +284,16 @@ void AEchoCharacter::Die()
 	Super::Die();
 	ActionState = EActionState::EAS_Dead;
 	DisableMeshCollision();
+}
+
+bool AEchoCharacter::HasEnoughStamina()
+{
+	return Attributes && Attributes->GetStamina() > Attributes->GetDodgeCost();
+}
+
+bool AEchoCharacter::IsOccupied()
+{
+	return ActionState != EActionState::EAS_Unoccupied;
 }
 
 void AEchoCharacter::FinishEquipping()

@@ -5,6 +5,10 @@
 #include "Components/SphereComponent.h"
 #include "Characters/EchoCharacter.h"
 #include "NiagaraComponent.h"
+#include "NiagaraSystem.h"
+#include "Interfaces/PickupInterface.h"
+#include "NiagaraFunctionLibrary.h"
+#include "Kismet/GameplayStatics.h"
 
 // Sets default values
 AItem::AItem()
@@ -20,8 +24,8 @@ AItem::AItem()
 	CollisionSphere = CreateDefaultSubobject<USphereComponent>(TEXT("CollisionSphere"));
 	CollisionSphere->SetupAttachment(GetRootComponent());
 
-	EmbersEffect = CreateDefaultSubobject<UNiagaraComponent>(TEXT("Embers"));
-	EmbersEffect->SetupAttachment(GetRootComponent());
+	ItemEffect = CreateDefaultSubobject<UNiagaraComponent>(TEXT("Embers"));
+	ItemEffect->SetupAttachment(GetRootComponent());
 }
 
 // Called when the game starts or when spawned
@@ -36,19 +40,35 @@ void AItem::BeginPlay()
 
 void AItem::OnSphereBeginOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult)
 {
-	TObjectPtr<AEchoCharacter> EchoCharacter = Cast<AEchoCharacter>(OtherActor);
-	if (EchoCharacter)
+	IPickupInterface* PickupInterface = Cast<IPickupInterface>(OtherActor);
+	if (PickupInterface)
 	{
-		EchoCharacter->SetOverlappingItem(this);
+		PickupInterface->SetOverlappingItem(this);
 	}
 }
 
 void AItem::OnSphereEndOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex)
 {
-	TObjectPtr<AEchoCharacter> EchoCharacter = Cast<AEchoCharacter>(OtherActor);
-	if (EchoCharacter)
+	IPickupInterface* PickupInterface = Cast<IPickupInterface>(OtherActor);
+	if (PickupInterface)
 	{
-		EchoCharacter->SetOverlappingItem(nullptr);
+		PickupInterface->SetOverlappingItem(nullptr);
+	}
+}
+
+void AItem::SpawnPickupSystem()
+{
+	if (PickupEffect)
+	{
+		UNiagaraFunctionLibrary::SpawnSystemAtLocation(this, PickupEffect, GetActorLocation());
+	}
+}
+
+void AItem::SpawnPickupSound()
+{
+	if (PickupSound)
+	{
+		UGameplayStatics::PlaySoundAtLocation(this, PickupSound, GetActorLocation());
 	}
 }
 
