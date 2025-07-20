@@ -30,7 +30,10 @@ protected:
 
 	/** Combat */
 	virtual void GetHit_Implementation(const FVector& ImpactPoint, AActor* Hitter) override;
-	virtual void Die();
+
+	UFUNCTION(BlueprintNativeEvent)
+	void Die();
+
 	virtual void Attack();
 	void DirectionalHitReact(const FVector& ImpactPoint);
 	virtual void HandleDamage(float DamageAmount);

@@ -164,6 +164,10 @@ void AEchoCharacter::Equip()
 	TObjectPtr<AWeapon> OverlappingWeapon = Cast<AWeapon>(OverlappingItem);
 	if (OverlappingWeapon)
 	{
+		if (EquippedWeapon)
+		{
+			EquippedWeapon->Destroy();
+		}
 		EquipWeapon(OverlappingWeapon);
 	}
 	else
@@ -279,9 +283,9 @@ void AEchoCharacter::PlayEquipMontage(FName SectionName)
 	}
 }
 
-void AEchoCharacter::Die()
+void AEchoCharacter::Die_Implementation()
 {
-	Super::Die();
+	Super::Die_Implementation();
 	ActionState = EActionState::EAS_Dead;
 	DisableMeshCollision();
 }

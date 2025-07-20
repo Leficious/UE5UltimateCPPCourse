@@ -70,7 +70,9 @@ protected:
 	UPROPERTY(EditAnywhere)
 	TObjectPtr<USoundBase> PickupSound;
 
-private:
+	UPROPERTY(EditAnywhere)
+	bool CanOscillate = true;
 
+private:
 
 };
